@@ -5,104 +5,147 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>門市排班管理</title>
     <style>
+        /* === 全局變數定義 (配色方案) === */
+        :root {
+            --bg-main: #f4f7fa;     /* 背景淡藍灰 */
+            --bg-card: #ffffff;     /* 卡片白底 */
+            --text-primary: #1f1f1f; /* 主要深色文字 */
+            --text-secondary: #8c8c8c; /* 次要灰色文字 */
+            --color-blue: #1890ff;   /* 主藍色 */
+            --color-blue-light: #e6f7ff; /* 淺藍背景 */
+            --color-pink: #ff4d4f;   /* 粉紅色 (地點) */
+            --color-purple: #722ed1; /* 紫色 (導覽列) */
+            --color-rest: #d9d9d9;   /* 休假灰色 */
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
         /* === 全局設定 === */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif; background-color: #f2f2f7; padding: 0; margin: 0; padding-bottom: 90px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            padding: 0; margin: 0; padding-bottom: 90px;
+            -webkit-font-smoothing: antialiased;
+        }
         .container { max-width: 500px; margin: 0 auto; }
         
-        /* === 頂部固定區 === */
+        /* === 頂部區域 === */
         .sticky-header {
-            position: sticky; top: 0; background-color: #f2f2f7; z-index: 100;
-            padding: 15px 15px 5px 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 100;
+            padding: 15px 20px 5px 20px;
+            background: transparent;
         }
 
-        /* 日期控制區 */
+        /* 日期控制卡片 */
         .header-controls {
             display: flex; justify-content: space-between; align-items: center;
-            background: white; padding: 8px; border-radius: 12px; margin-bottom: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            background: var(--bg-card); padding: 10px 15px;
+            border-radius: 16px; margin-bottom: 15px;
+            box-shadow: var(--shadow-soft);
         }
         .date-picker-container { flex: 1; text-align: center; position: relative; }
-        input[type="date"] { border: none; background: transparent; font-size: 17px; font-weight: 700; color: #1c1c1e; text-align: center; width: 135px; cursor: pointer; }
-        .arrow-btn {
-            background: #f2f2f7; border: none; width: 40px; height: 40px; border-radius: 50%;
-            font-size: 18px; color: #007aff; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
+        input[type="date"] { 
+            border: none; background: transparent; 
+            font-size: 18px; font-weight: 800; color: var(--text-primary); 
+            text-align: center; width: 140px; cursor: pointer; font-family: inherit;
         }
+        .arrow-btn {
+            background: var(--bg-main); border: none; width: 36px; height: 36px; border-radius: 50%;
+            font-size: 16px; color: var(--color-blue); font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+        }
+        .arrow-btn:active { background: #e6ebf0; }
 
         /* 星期導覽列 */
-        .nav-bar { display: flex; justify-content: space-between; gap: 5px; padding-bottom: 5px; }
+        .nav-bar { display: flex; justify-content: space-between; gap: 8px; padding: 0 5px 10px 5px; }
         .nav-btn {
-            flex: 1; background: #ffffff; border: none; border-radius: 8px; padding: 10px 0;
-            font-size: 14px; font-weight: 600; color: #8e8e93; cursor: pointer; transition: all 0.2s;
+            flex: 1; background: transparent; border: none; border-radius: 12px; padding: 10px 0;
+            font-size: 14px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s;
         }
-        .nav-btn.active { background-color: #007aff; color: white; box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3); }
+        .nav-btn.active { 
+            color: var(--text-primary); background: var(--bg-card);
+            box-shadow: var(--shadow-soft); position: relative;
+        }
+        .nav-btn.active::after {
+            content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+            width: 20px; height: 3px; background: var(--color-blue); border-radius: 2px;
+        }
 
         /* === 內容區 === */
         #contentArea { padding: 10px 20px; }
-        .empty-week { text-align: center; padding: 40px 20px; color: #8e8e93; }
+        .empty-week { text-align: center; padding: 50px 20px; color: var(--text-secondary); font-weight: 500; }
 
         /* === 我的班表卡片 === */
         .day-card { 
-            background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; 
-            position: relative; scroll-margin-top: 180px;
+            background: var(--bg-card); border-radius: 16px; padding: 16px 20px;
+            margin-bottom: 16px; box-shadow: var(--shadow-soft);
+            display: flex; flex-direction: column;
+            border-left: 4px solid transparent; scroll-margin-top: 180px;
         }
-        .day-card.work::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background-color: #007aff; }
-        .day-card.rest::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background-color: #e5e5ea; }
+        .day-card.work { border-left-color: var(--color-blue); }
+        .day-card.rest { border-left-color: var(--color-rest); opacity: 0.8; }
         
-        .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; padding-left: 10px; }
-        .day-title { font-size: 18px; font-weight: 700; color: #1c1c1e; }
-        .shift-badge { font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: #f2f2f7; color: #8e8e93; }
-        .work .shift-badge { background-color: #eaf2ff; color: #007aff; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .day-title { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+        
+        .shift-badge {
+            font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 24px;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .work .shift-badge { background-color: var(--color-blue-light); color: var(--color-blue); }
+        .rest .shift-badge { background-color: #f0f0f0; color: var(--text-secondary); }
+        .badge-icon { font-size: 14px; }
 
-        .detail-row { display: flex; justify-content: space-between; font-size: 15px; margin-top: 6px; color: #3a3a3c; border-bottom: 1px solid #f2f2f7; padding-bottom: 6px; padding-left: 10px;}
-        .detail-row:last-child { border-bottom: none; }
-        .loc { font-weight: 600; }
-        .time { font-family: monospace, sans-serif; color: #636366; }
+        .detail-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 15px; margin-top: 10px; color: var(--text-primary);
+        }
+        .loc-container { display: flex; align-items: center; font-weight: 600; }
+        .loc-pin { color: var(--color-pink); margin-right: 6px; font-size: 16px; }
+        .time { font-family: "SF Mono", "Roboto Mono", monospace; color: var(--text-secondary); font-weight: 500; }
 
-        /* === 同事班表樣式 (新版) === */
+        /* === 同事班表樣式 === */
         .others-card {
-            background: white; border-radius: 16px; overflow: hidden; margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); scroll-margin-top: 180px;
+            background: var(--bg-card); border-radius: 16px; overflow: hidden; margin-bottom: 20px;
+            box-shadow: var(--shadow-soft); scroll-margin-top: 180px; border: none;
         }
         .others-header {
-            background: #f8f9fa; padding: 12px 15px; border-bottom: 1px solid #eee;
+            background: #fafafa; padding: 12px 20px; border-bottom: 1px solid #eee;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .others-title { font-size: 18px; font-weight: 800; color: #333; }
-        .others-date { font-size: 14px; color: #888; }
+        .others-title { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+        .others-date { font-size: 14px; color: var(--text-secondary); }
 
-        /* 店鋪區塊 */
-        .store-section { border-bottom: 4px solid #f2f2f7; }
+        .store-section { border-bottom: 1px solid #eee; }
         .store-section:last-child { border-bottom: none; }
-        
         .store-title {
-            padding: 8px 15px; font-size: 14px; font-weight: 700; color: #555;
+            padding: 10px 20px; font-size: 14px; font-weight: 700; color: var(--text-secondary);
             background: #fff; display: flex; align-items: center; letter-spacing: 0.5px;
         }
         .store-icon { margin-right: 6px; font-size: 16px; }
 
         .staff-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 15px; border-top: 1px solid #f2f2f7;
+            padding: 12px 20px; border-top: 1px solid #f9f9f9;
         }
-        .staff-name { font-weight: 600; font-size: 15px; color: #333; }
-        .staff-loc-tag { font-size: 11px; background: #ffefe0; color: #ff9500; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
-        .staff-time { font-family: monospace, sans-serif; font-size: 14px; color: #007aff; font-weight: 500; }
-        .no-staff { padding: 10px 15px; color: #ccc; font-size: 13px; font-style: italic; border-top: 1px solid #f2f2f7; }
+        .staff-name { font-weight: 600; font-size: 15px; color: var(--text-primary); }
+        .staff-loc-tag { font-size: 11px; background: #fff1f0; color: var(--color-pink); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal;}
+        .staff-time { font-family: "SF Mono", monospace; font-size: 14px; color: var(--color-blue); font-weight: 500; }
+        .no-staff { padding: 15px 20px; color: var(--text-secondary); font-size: 14px; font-style: italic; border-top: 1px solid #f9f9f9; }
 
         /* === 底部導覽列 === */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0;
-            background: white; border-top: 1px solid #e5e5ea;
-            display: flex; justify-content: space-around; padding: 10px 0 25px 0; z-index: 200;
+            background: var(--bg-card); box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+            display: flex; justify-content: space-around; padding: 12px 0 20px 0; z-index: 200;
         }
         .tab-btn {
-            border: none; background: none; color: #8e8e93; font-size: 10px; font-weight: 600;
+            border: none; background: none; color: var(--text-secondary); font-size: 11px; font-weight: 600;
             display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 50%;
+            transition: color 0.2s;
         }
         .tab-icon { font-size: 24px; margin-bottom: 4px; }
-        .tab-btn.active { color: #007aff; }
+        .tab-btn.active { color: var(--color-purple); }
         
         .hidden { display: none; }
     </style>
@@ -112,12 +155,16 @@
 <div class="container">
     <div class="sticky-header">
         <div class="header-controls">
-            <button class="arrow-btn" onclick="changeWeek(-1)">❮</button>
+            <button class="arrow-btn" onclick="changeWeek(-1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
             <div class="date-picker-container">
                 <input type="date" id="datePicker" onchange="onDatePick()">
-                <div style="font-size: 10px; color: #888;">(點擊選擇日期)</div>
+                <div style="font-size: 11px; color: #aaa; margin-top: 2px;">(點擊選擇日期)</div>
             </div>
-            <button class="arrow-btn" onclick="changeWeek(1)">❯</button>
+            <button class="arrow-btn" onclick="changeWeek(1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
         </div>
         <div class="nav-bar hidden" id="myNavBar"></div>
         <div class="nav-bar hidden" id="othersNavBar"></div>
@@ -128,10 +175,16 @@
 
 <div class="bottom-nav">
     <button class="tab-btn active" onclick="switchTab('my')" id="tab-my">
-        <span class="tab-icon">👤</span>我的班表
+        <span class="tab-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </span>
+        我的班表
     </button>
     <button class="tab-btn" onclick="switchTab('others')" id="tab-others">
-        <span class="tab-icon">🏪</span>各店排班
+        <span class="tab-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
+        </span>
+        各店排班
     </button>
 </div>
 
@@ -140,45 +193,42 @@
     // 1. 資料庫區域
     // ==========================================
     
-    // 【我的班表】(王泓韋) - 更新至 12/1 ~ 12/7 (含智取店支援)
+    // 【我的班表】(王泓韋) - 12/1 ~ 12/7
+    // *** 修正：將所有資料整合在 "2025-12-01" 這個 Key 底下，網頁才能一次讀出整週 ***
     const MY_ROSTER = {
         "2025-12-01": [
-            { id: 0, day: "週一", type: "work", name: "🏠 益民午6", list: [{loc:"益民店", t:"午6"}] }
-        ],
-        "2025-12-02": [
-            { id: 1, day: "週二", type: "work", name: "🏠 益民午6", list: [{loc:"益民店", t:"午6"}] }
-        ],
-        "2025-12-03": [
-            { id: 2, day: "週三", type: "work", name: "⚠️ 智取支援", list: [{loc:"立高", t:"08:00-08:30"}, {loc:"達明", t:"08:30-09:30"}, {loc:"長榮", t:"09:30-10:30"}] }
-        ],
-        "2025-12-04": [
-            { id: 3, day: "週四", type: "work", name: "⚠️ 智取/樹德", list: [{loc:"德富", t:"08:00-09:00"}, {loc:"建國南", t:"09:00-09:30"}, {loc:"樹德店", t:"午6"}] }
-        ],
-        "2025-12-05": [
-            { id: 4, day: "週五", type: "rest", name: "休假", list: [] }
-        ],
-        "2025-12-06": [
-            { id: 5, day: "週六", type: "rest", name: "休假", list: [] }
-        ],
-        "2025-12-07": [
-            { id: 6, day: "週日", type: "work", name: "⚠️ 支援高工", list: [{loc:"高工店", t:"早6"}] }
+            { id: 0, day: "週一", type: "work", name: "益民午6", icon: "🏠", list: [{loc:"益民店", t:"16:15-22:45"}] },
+            { id: 1, day: "週二", type: "work", name: "益民午6", icon: "🏠", list: [{loc:"益民店", t:"16:15-22:45"}] },
+            { id: 2, day: "週三", type: "work", name: "智取支援", icon: "⚠️", list: [
+                {loc:"立高智取", t:"08:00-08:30"}, 
+                {loc:"達明智取", t:"08:30-09:30"}, 
+                {loc:"長榮智取", t:"09:30-10:30"}
+            ]},
+            { id: 3, day: "週四", type: "work", name: "智取/樹德", icon: "⚠️", list: [
+                {loc:"德富智取", t:"08:00-09:00"}, 
+                {loc:"建國南智取", t:"09:00-09:30"}, 
+                {loc:"樹德店", t:"16:15-22:45"}
+            ]},
+            { id: 4, day: "週五", type: "rest", name: "休假", icon: "💤", list: [] },
+            { id: 5, day: "週六", type: "rest", name: "休假", icon: "💤", list: [] },
+            { id: 6, day: "週日", type: "work", name: "支援高工", icon: "⚠️", list: [{loc:"高工店", t:"11:00-17:30"}] }
         ]
     };
 
-    // 【五店詳細班表】 - 更新至 12/1 ~ 12/7
+    // 【五店詳細班表】 - 所有人
     const OTHERS_ROSTER = {
         "2025-12-01": [
             {
                 date: "12/1 (一)",
                 stores: {
+                    "益民店": [
+                        {n:"鄭翔介", t:"早6"}, {n:"王泓韋", t:"午6"}, {n:"潘昕岑", t:"晚4 19:30-22:00"}, {n:"邱郁紘", t:"東榮午6"}
+                    ],
                     "東榮店": [
                         {n:"陳柏廷", t:"早8 11:00-18:00"}, {n:"吳柔旋", t:"晚4 19:00-21:30"}, {n:"邱郁紘", t:"午6(益民)"}
                     ],
                     "大里店": [
                         {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"唐羅杰", t:"午6"}, {n:"劉吉晏", t:"晚4 19:00-22:00"}
-                    ],
-                    "益民店": [
-                        {n:"鄭翔介", t:"早6"}, {n:"王泓韋", t:"午6"}, {n:"潘昕岑", t:"晚4 19:30-22:00"}
                     ],
                     "高工店": [
                         {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林侃辰", t:"午6"}, {n:"林威粽", t:"晚4 19:30-22:00"}
@@ -191,14 +241,14 @@
             {
                 date: "12/2 (二)",
                 stores: {
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"林育瑛", t:"大里早8"}, {n:"王泓韋", t:"午6"}, {n:"施育丞", t:"晚4 19:00-22:00"}
+                    ],
                     "東榮店": [
                         {n:"陳柏廷", t:"早6"}, {n:"施宣卉", t:"晚4 19:30-21:30"}, {n:"劉吉晏", t:"午6(大里)"}
                     ],
                     "大里店": [
                         {n:"白沅平", t:"午6"}, {n:"林育瑛", t:"早8 11:00-18:00(益民)"}, {n:"李律衡", t:"晚4 19:30-21:30(東榮)"}
-                    ],
-                    "益民店": [
-                        {n:"王躍融", t:"早6"}, {n:"王泓韋", t:"午6"}, {n:"施育丞", t:"晚4 19:00-22:00"}
                     ],
                     "高工店": [
                         {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林威粽", t:"晚4 19:00-22:00"}, {n:"林紫涵", t:"午6"}
@@ -211,14 +261,14 @@
             {
                 date: "12/3 (三)",
                 stores: {
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"鄭翔介", t:"東榮早6"}, {n:"潘昕岑", t:"晚4 19:00-22:00"}, {n:"施育丞", t:"午6"}
+                    ],
                     "東榮店": [
                         {n:"吳柔旋", t:"晚4 19:30-21:30"}, {n:"鄭翔介", t:"早6(益民)"}, {n:"唐羅杰", t:"午6(大里)"}
                     ],
                     "大里店": [
                         {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"白沅平", t:"晚4 19:30-21:30"}, {n:"高依頓", t:"午6"}
-                    ],
-                    "益民店": [
-                        {n:"王躍融", t:"早6"}, {n:"潘昕岑", t:"晚4 19:00-22:00"}
                     ],
                     "高工店": [
                         {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林侃辰", t:"午6"}, {n:"林威粽", t:"晚4 19:00-22:00"}
@@ -231,14 +281,14 @@
             {
                 date: "12/4 (四)",
                 stores: {
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"林育瑛", t:"東榮早6"}, {n:"王泓韋", t:"樹德午6"}, {n:"邱郁紘", t:"午6"}, {n:"潘昕岑", t:"晚4 19:00-22:00"}
+                    ],
                     "東榮店": [
                         {n:"吳柔旋", t:"午6"}, {n:"楊佳勝", t:"晚4 19:30-21:30"}, {n:"林育瑛", t:"早6(益民)"}
                     ],
                     "大里店": [
                         {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"白沅平", t:"晚4 19:30-21:30"}, {n:"劉吉晏", t:"午6"}
-                    ],
-                    "益民店": [
-                        {n:"王躍融", t:"早6"}, {n:"邱郁紘", t:"午6"}, {n:"潘昕岑", t:"晚4 19:00-22:00"}
                     ],
                     "高工店": [
                         {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林威粽", t:"午6"}, {n:"林紫涵", t:"晚4 19:00-22:00"}
@@ -251,14 +301,14 @@
             {
                 date: "12/5 (五)",
                 stores: {
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"潘昕岑", t:"午6"}, {n:"施育丞", t:"晚4 19:00-22:00"}
+                    ],
                     "東榮店": [
                         {n:"陳柏廷", t:"早6"}, {n:"吳柔旋", t:"午6"}, {n:"楊佳勝", t:"晚4 19:30-21:30"}
                     ],
                     "大里店": [
                         {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"唐羅杰", t:"午6"}, {n:"白沅平", t:"晚4 19:30-21:30"}
-                    ],
-                    "益民店": [
-                        {n:"王躍融", t:"早6"}, {n:"潘昕岑", t:"午6"}, {n:"施育丞", t:"晚4 19:00-22:00"}
                     ],
                     "高工店": [
                         {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林威粽", t:"午6"}, {n:"林紫涵", t:"晚4 19:00-22:00"}
@@ -271,14 +321,14 @@
             {
                 date: "12/6 (六)",
                 stores: {
+                    "益民店": [
+                        {n:"王躍融", t:"早4"}, {n:"邱郁紘", t:"大里早6"}, {n:"施育丞", t:"午6"}, {n:"藍立傑", t:"午4 15:00-18:00"}
+                    ],
                     "東榮店": [
                         {n:"陳柏廷", t:"早4"}, {n:"楊佳勝", t:"午8"}
                     ],
                     "大里店": [
                         {n:"唐羅杰", t:"午6"}, {n:"邱郁紘", t:"早6(益民)"}
-                    ],
-                    "益民店": [
-                        {n:"王躍融", t:"早4"}, {n:"施育丞", t:"午6"}, {n:"藍立傑", t:"午4 15:00-18:00"}
                     ],
                     "高工店": [
                         {n:"洪亦蓁", t:"早8 11:00-18:30"}, {n:"林紫涵", t:"午6"}
@@ -291,14 +341,14 @@
             {
                 date: "12/7 (日)",
                 stores: {
+                    "益民店": [
+                        {n:"林育瑛", t:"早6"}, {n:"邱郁紘", t:"大里早6"}, {n:"王泓韋", t:"高工早6"}, {n:"潘昕岑", t:"午6"}
+                    ],
                     "東榮店": [
                         {n:"陳柏廷", t:"早6"}, {n:"施宣卉", t:"午6"}
                     ],
                     "大里店": [
                         {n:"白沅平", t:"午6"}, {n:"邱郁紘", t:"早6(益民)"}
-                    ],
-                    "益民店": [
-                        {n:"林育瑛", t:"早6"}, {n:"潘昕岑", t:"午6"}
                     ],
                     "高工店": [
                         {n:"林侃辰", t:"午6"}, {n:"王泓韋", t:"早6(益民)"}
@@ -327,7 +377,7 @@
         return `${y}-${m}-${day}`;
     }
 
-    // 將預設日期設定為 2025-12-01，以便直接顯示新班表
+    // 將預設日期設定為 2025-12-01
     let currentMonday = getMonday(new Date("2025-12-01"));
     let currentTab = 'my'; 
 
@@ -375,7 +425,7 @@
         }
     }
 
-    // 渲染：我的班表
+    // 渲染：我的班表 (修正後)
     function renderMySchedule(dateKey, listDiv, navDiv) {
         const weekData = MY_ROSTER[dateKey];
         navDiv.innerHTML = "";
@@ -397,14 +447,20 @@
                 <div class="day-card ${item.type}" id="card-${index}">
                     <div class="card-header">
                         <span class="day-title">${item.day}</span>
-                        <span class="shift-badge">${item.name}</span>
+                        <span class="shift-badge">
+                            <span class="badge-icon">${item.icon || ''}</span>
+                            ${item.name}
+                        </span>
                     </div>
             `;
             if(item.list.length > 0) {
                 item.list.forEach(sub => {
                     html += `
                         <div class="detail-row">
-                            <span class="loc">📍 ${sub.loc}</span>
+                            <span class="loc-container">
+                                <span class="loc-pin">📍</span>
+                                ${sub.loc}
+                            </span>
                             <span class="time">${sub.t}</span>
                         </div>`;
                 });
@@ -429,7 +485,6 @@
         const days = ["一", "二", "三", "四", "五", "六", "日"];
         
         weekData.forEach((dayInfo, index) => {
-            // 導覽按鈕
             let btn = document.createElement("button");
             btn.className = "nav-btn";
             btn.innerText = days[index];
@@ -437,7 +492,6 @@
             btn.id = `others-btn-${index}`;
             navDiv.appendChild(btn);
 
-            // 卡片
             let html = `
                 <div class="others-card" id="others-${index}">
                     <div class="others-header">
@@ -445,8 +499,7 @@
                     </div>
             `;
 
-            // 五店迴圈
-            const storeOrder = ["東榮店", "大里店", "益民店", "高工店", "樹德店"];
+            const storeOrder = ["益民店", "東榮店", "大里店", "高工店", "樹德店"];
             
             storeOrder.forEach(storeName => {
                 let staffs = dayInfo.stores[storeName];
