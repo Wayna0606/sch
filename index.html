@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>門市排班管理</title>
+    <style>
+        /* === 全局設定 === */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif; background-color: #f2f2f7; padding: 0; margin: 0; padding-bottom: 90px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        /* === 頂部固定區 === */
+        .sticky-header {
+            position: sticky; top: 0; background-color: #f2f2f7; z-index: 100;
+            padding: 15px 15px 5px 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        /* 日期控制區 */
+        .header-controls {
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; padding: 8px; border-radius: 12px; margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .date-picker-container { flex: 1; text-align: center; position: relative; }
+        input[type="date"] { border: none; background: transparent; font-size: 17px; font-weight: 700; color: #1c1c1e; text-align: center; width: 135px; cursor: pointer; }
+        .arrow-btn {
+            background: #f2f2f7; border: none; width: 40px; height: 40px; border-radius: 50%;
+            font-size: 18px; color: #007aff; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 星期導覽列 */
+        .nav-bar { display: flex; justify-content: space-between; gap: 5px; padding-bottom: 5px; }
+        .nav-btn {
+            flex: 1; background: #ffffff; border: none; border-radius: 8px; padding: 10px 0;
+            font-size: 14px; font-weight: 600; color: #8e8e93; cursor: pointer; transition: all 0.2s;
+        }
+        .nav-btn.active { background-color: #007aff; color: white; box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3); }
+
+        /* === 內容區 === */
+        #contentArea { padding: 10px 20px; }
+        .empty-week { text-align: center; padding: 40px 20px; color: #8e8e93; }
+
+        /* === 我的班表卡片 === */
+        .day-card { 
+            background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; 
+            position: relative; scroll-margin-top: 180px;
+        }
+        .day-card.work::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background-color: #007aff; }
+        .day-card.rest::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background-color: #e5e5ea; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; padding-left: 10px; }
+        .day-title { font-size: 18px; font-weight: 700; color: #1c1c1e; }
+        .shift-badge { font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: #f2f2f7; color: #8e8e93; }
+        .work .shift-badge { background-color: #eaf2ff; color: #007aff; }
+
+        .detail-row { display: flex; justify-content: space-between; font-size: 15px; margin-top: 6px; color: #3a3a3c; border-bottom: 1px solid #f2f2f7; padding-bottom: 6px; padding-left: 10px;}
+        .detail-row:last-child { border-bottom: none; }
+        .loc { font-weight: 600; }
+        .time { font-family: monospace, sans-serif; color: #636366; }
+
+        /* === 同事班表樣式 (新版) === */
+        .others-card {
+            background: white; border-radius: 16px; overflow: hidden; margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); scroll-margin-top: 180px;
+        }
+        .others-header {
+            background: #f8f9fa; padding: 12px 15px; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .others-title { font-size: 18px; font-weight: 800; color: #333; }
+        .others-date { font-size: 14px; color: #888; }
+
+        /* 店鋪區塊 */
+        .store-section { border-bottom: 4px solid #f2f2f7; }
+        .store-section:last-child { border-bottom: none; }
+        
+        .store-title {
+            padding: 8px 15px; font-size: 14px; font-weight: 700; color: #555;
+            background: #fff; display: flex; align-items: center; letter-spacing: 0.5px;
+        }
+        .store-icon { margin-right: 6px; font-size: 16px; }
+
+        .staff-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 15px; border-top: 1px solid #f2f2f7;
+        }
+        .staff-name { font-weight: 600; font-size: 15px; color: #333; }
+        .staff-loc-tag { font-size: 11px; background: #ffefe0; color: #ff9500; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
+        .staff-time { font-family: monospace, sans-serif; font-size: 14px; color: #007aff; font-weight: 500; }
+        .no-staff { padding: 10px 15px; color: #ccc; font-size: 13px; font-style: italic; border-top: 1px solid #f2f2f7; }
+
+        /* === 底部導覽列 === */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; border-top: 1px solid #e5e5ea;
+            display: flex; justify-content: space-around; padding: 10px 0 25px 0; z-index: 200;
+        }
+        .tab-btn {
+            border: none; background: none; color: #8e8e93; font-size: 10px; font-weight: 600;
+            display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 50%;
+        }
+        .tab-icon { font-size: 24px; margin-bottom: 4px; }
+        .tab-btn.active { color: #007aff; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sticky-header">
+        <div class="header-controls">
+            <button class="arrow-btn" onclick="changeWeek(-1)">❮</button>
+            <div class="date-picker-container">
+                <input type="date" id="datePicker" onchange="onDatePick()">
+                <div style="font-size: 10px; color: #888;">(點擊選擇日期)</div>
+            </div>
+            <button class="arrow-btn" onclick="changeWeek(1)">❯</button>
+        </div>
+        <div class="nav-bar hidden" id="myNavBar"></div>
+        <div class="nav-bar hidden" id="othersNavBar"></div>
+    </div>
+
+    <div id="contentArea"></div>
+</div>
+
+<div class="bottom-nav">
+    <button class="tab-btn active" onclick="switchTab('my')" id="tab-my">
+        <span class="tab-icon">👤</span>我的班表
+    </button>
+    <button class="tab-btn" onclick="switchTab('others')" id="tab-others">
+        <span class="tab-icon">🏪</span>各店排班
+    </button>
+</div>
+
+<script>
+    // ==========================================
+    // 1. 資料庫區域
+    // ==========================================
+    
+    // 【我的班表】(王泓韋) - 更新至 12/1 ~ 12/7 (含智取店支援)
+    const MY_ROSTER = {
+        "2025-12-01": [
+            { id: 0, day: "週一", type: "work", name: "🏠 益民午6", list: [{loc:"益民店", t:"午6"}] }
+        ],
+        "2025-12-02": [
+            { id: 1, day: "週二", type: "work", name: "🏠 益民午6", list: [{loc:"益民店", t:"午6"}] }
+        ],
+        "2025-12-03": [
+            { id: 2, day: "週三", type: "work", name: "⚠️ 智取支援", list: [{loc:"立高", t:"08:00-08:30"}, {loc:"達明", t:"08:30-09:30"}, {loc:"長榮", t:"09:30-10:30"}] }
+        ],
+        "2025-12-04": [
+            { id: 3, day: "週四", type: "work", name: "⚠️ 智取/樹德", list: [{loc:"德富", t:"08:00-09:00"}, {loc:"建國南", t:"09:00-09:30"}, {loc:"樹德店", t:"午6"}] }
+        ],
+        "2025-12-05": [
+            { id: 4, day: "週五", type: "rest", name: "休假", list: [] }
+        ],
+        "2025-12-06": [
+            { id: 5, day: "週六", type: "rest", name: "休假", list: [] }
+        ],
+        "2025-12-07": [
+            { id: 6, day: "週日", type: "work", name: "⚠️ 支援高工", list: [{loc:"高工店", t:"早6"}] }
+        ]
+    };
+
+    // 【五店詳細班表】 - 更新至 12/1 ~ 12/7
+    const OTHERS_ROSTER = {
+        "2025-12-01": [
+            {
+                date: "12/1 (一)",
+                stores: {
+                    "東榮店": [
+                        {n:"陳柏廷", t:"早8 11:00-18:00"}, {n:"吳柔旋", t:"晚4 19:00-21:30"}, {n:"邱郁紘", t:"午6(益民)"}
+                    ],
+                    "大里店": [
+                        {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"唐羅杰", t:"午6"}, {n:"劉吉晏", t:"晚4 19:00-22:00"}
+                    ],
+                    "益民店": [
+                        {n:"鄭翔介", t:"早6"}, {n:"王泓韋", t:"午6"}, {n:"潘昕岑", t:"晚4 19:30-22:00"}
+                    ],
+                    "高工店": [
+                        {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林侃辰", t:"午6"}, {n:"林威粽", t:"晚4 19:30-22:00"}
+                    ],
+                    "樹德店": [
+                        {n:"李育嘉", t:"早8 11:00-18:00"}, {n:"徐振泰", t:"午6"}, {n:"林紫涵", t:"晚4 19:30-21:30(高工)"}
+                    ]
+                }
+            },
+            {
+                date: "12/2 (二)",
+                stores: {
+                    "東榮店": [
+                        {n:"陳柏廷", t:"早6"}, {n:"施宣卉", t:"晚4 19:30-21:30"}, {n:"劉吉晏", t:"午6(大里)"}
+                    ],
+                    "大里店": [
+                        {n:"白沅平", t:"午6"}, {n:"林育瑛", t:"早8 11:00-18:00(益民)"}, {n:"李律衡", t:"晚4 19:30-21:30(東榮)"}
+                    ],
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"王泓韋", t:"午6"}, {n:"施育丞", t:"晚4 19:00-22:00"}
+                    ],
+                    "高工店": [
+                        {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林威粽", t:"晚4 19:00-22:00"}, {n:"林紫涵", t:"午6"}
+                    ],
+                    "樹德店": [
+                        {n:"王韻晴", t:"早8 11:00-18:30"}, {n:"洪亦蓁", t:"午6(高工)"}
+                    ]
+                }
+            },
+            {
+                date: "12/3 (三)",
+                stores: {
+                    "東榮店": [
+                        {n:"吳柔旋", t:"晚4 19:30-21:30"}, {n:"鄭翔介", t:"早6(益民)"}, {n:"唐羅杰", t:"午6(大里)"}
+                    ],
+                    "大里店": [
+                        {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"白沅平", t:"晚4 19:30-21:30"}, {n:"高依頓", t:"午6"}
+                    ],
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"潘昕岑", t:"晚4 19:00-22:00"}
+                    ],
+                    "高工店": [
+                        {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林侃辰", t:"午6"}, {n:"林威粽", t:"晚4 19:00-22:00"}
+                    ],
+                    "樹德店": [
+                        {n:"王韻晴", t:"早8 11:00-18:00"}, {n:"洪亦蓁", t:"午6(高工)"}
+                    ]
+                }
+            },
+            {
+                date: "12/4 (四)",
+                stores: {
+                    "東榮店": [
+                        {n:"吳柔旋", t:"午6"}, {n:"楊佳勝", t:"晚4 19:30-21:30"}, {n:"林育瑛", t:"早6(益民)"}
+                    ],
+                    "大里店": [
+                        {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"白沅平", t:"晚4 19:30-21:30"}, {n:"劉吉晏", t:"午6"}
+                    ],
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"邱郁紘", t:"午6"}, {n:"潘昕岑", t:"晚4 19:00-22:00"}
+                    ],
+                    "高工店": [
+                        {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林威粽", t:"午6"}, {n:"林紫涵", t:"晚4 19:00-22:00"}
+                    ],
+                    "樹德店": [
+                        {n:"王韻晴", t:"早8 11:00-18:00"}, {n:"王泓韋", t:"午6(益民)"}
+                    ]
+                }
+            },
+            {
+                date: "12/5 (五)",
+                stores: {
+                    "東榮店": [
+                        {n:"陳柏廷", t:"早6"}, {n:"吳柔旋", t:"午6"}, {n:"楊佳勝", t:"晚4 19:30-21:30"}
+                    ],
+                    "大里店": [
+                        {n:"林羽庭", t:"早8 11:00-18:00"}, {n:"唐羅杰", t:"午6"}, {n:"白沅平", t:"晚4 19:30-21:30"}
+                    ],
+                    "益民店": [
+                        {n:"王躍融", t:"早6"}, {n:"潘昕岑", t:"午6"}, {n:"施育丞", t:"晚4 19:00-22:00"}
+                    ],
+                    "高工店": [
+                        {n:"曾家玹", t:"早8 11:00-18:00"}, {n:"林威粽", t:"午6"}, {n:"林紫涵", t:"晚4 19:00-22:00"}
+                    ],
+                    "樹德店": [
+                        {n:"王韻晴", t:"早8 11:00-18:00"}, {n:"林侃辰", t:"午6(高工)"}
+                    ]
+                }
+            },
+            {
+                date: "12/6 (六)",
+                stores: {
+                    "東榮店": [
+                        {n:"陳柏廷", t:"早4"}, {n:"楊佳勝", t:"午8"}
+                    ],
+                    "大里店": [
+                        {n:"唐羅杰", t:"午6"}, {n:"邱郁紘", t:"早6(益民)"}
+                    ],
+                    "益民店": [
+                        {n:"王躍融", t:"早4"}, {n:"施育丞", t:"午6"}, {n:"藍立傑", t:"午4 15:00-18:00"}
+                    ],
+                    "高工店": [
+                        {n:"洪亦蓁", t:"早8 11:00-18:30"}, {n:"林紫涵", t:"午6"}
+                    ],
+                    "樹德店": [
+                        {n:"李育嘉", t:"早8 11:00-18:00"}, {n:"徐振泰", t:"午6"}
+                    ]
+                }
+            },
+            {
+                date: "12/7 (日)",
+                stores: {
+                    "東榮店": [
+                        {n:"陳柏廷", t:"早6"}, {n:"施宣卉", t:"午6"}
+                    ],
+                    "大里店": [
+                        {n:"白沅平", t:"午6"}, {n:"邱郁紘", t:"早6(益民)"}
+                    ],
+                    "益民店": [
+                        {n:"林育瑛", t:"早6"}, {n:"潘昕岑", t:"午6"}
+                    ],
+                    "高工店": [
+                        {n:"林侃辰", t:"午6"}, {n:"王泓韋", t:"早6(益民)"}
+                    ],
+                    "樹德店": [
+                        {n:"王韻晴", t:"早6"}, {n:"徐振泰", t:"午6"}
+                    ]
+                }
+            }
+        ]
+    };
+
+    // ==========================================
+    // 2. 程式邏輯
+    // ==========================================
+    function getMonday(d) {
+        d = new Date(d);
+        var day = d.getDay();
+        var diff = d.getDate() - day + (day == 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    }
+    function formatDateISO(d) {
+        let y = d.getFullYear();
+        let m = String(d.getMonth() + 1).padStart(2, '0');
+        let day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    // 將預設日期設定為 2025-12-01，以便直接顯示新班表
+    let currentMonday = getMonday(new Date("2025-12-01"));
+    let currentTab = 'my'; 
+
+    // 初始化
+    renderPage();
+
+    function switchTab(tabName) {
+        currentTab = tabName;
+        document.getElementById('tab-my').className = tabName === 'my' ? 'tab-btn active' : 'tab-btn';
+        document.getElementById('tab-others').className = tabName === 'others' ? 'tab-btn active' : 'tab-btn';
+        renderPage();
+    }
+
+    function changeWeek(offset) {
+        currentMonday.setDate(currentMonday.getDate() + (offset * 7));
+        renderPage();
+    }
+    
+    function onDatePick() {
+        const picker = document.getElementById("datePicker");
+        if(picker.value) {
+            currentMonday = getMonday(new Date(picker.value));
+            renderPage();
+        }
+    }
+
+    function renderPage() {
+        let dateKey = formatDateISO(currentMonday);
+        document.getElementById("datePicker").value = dateKey;
+
+        const contentDiv = document.getElementById("contentArea");
+        const myNav = document.getElementById("myNavBar");
+        const othersNav = document.getElementById("othersNavBar");
+        
+        contentDiv.innerHTML = "";
+
+        if (currentTab === 'my') {
+            myNav.classList.remove("hidden");
+            othersNav.classList.add("hidden");
+            renderMySchedule(dateKey, contentDiv, myNav);
+        } else {
+            myNav.classList.add("hidden");
+            othersNav.classList.remove("hidden");
+            renderOthersSchedule(dateKey, contentDiv, othersNav);
+        }
+    }
+
+    // 渲染：我的班表
+    function renderMySchedule(dateKey, listDiv, navDiv) {
+        const weekData = MY_ROSTER[dateKey];
+        navDiv.innerHTML = "";
+
+        if (!weekData) {
+            listDiv.innerHTML = `<div class="empty-week">📅 本週尚無您的班表</div>`;
+            return;
+        }
+
+        weekData.forEach((item, index) => {
+            let btn = document.createElement("button");
+            btn.className = "nav-btn";
+            btn.innerText = item.day.replace("週","");
+            btn.onclick = () => scrollToId(`card-${index}`, index, 'my');
+            btn.id = `my-btn-${index}`;
+            navDiv.appendChild(btn);
+
+            let html = `
+                <div class="day-card ${item.type}" id="card-${index}">
+                    <div class="card-header">
+                        <span class="day-title">${item.day}</span>
+                        <span class="shift-badge">${item.name}</span>
+                    </div>
+            `;
+            if(item.list.length > 0) {
+                item.list.forEach(sub => {
+                    html += `
+                        <div class="detail-row">
+                            <span class="loc">📍 ${sub.loc}</span>
+                            <span class="time">${sub.t}</span>
+                        </div>`;
+                });
+            }
+            html += `</div>`;
+            listDiv.innerHTML += html;
+        });
+        
+        autoHighlightDay('my');
+    }
+
+    // 渲染：五店班表
+    function renderOthersSchedule(dateKey, listDiv, navDiv) {
+        const weekData = OTHERS_ROSTER[dateKey];
+        navDiv.innerHTML = "";
+
+        if (!weekData) {
+            listDiv.innerHTML = `<div class="empty-week">👥 本週尚未記錄同事班表</div>`;
+            return;
+        }
+
+        const days = ["一", "二", "三", "四", "五", "六", "日"];
+        
+        weekData.forEach((dayInfo, index) => {
+            // 導覽按鈕
+            let btn = document.createElement("button");
+            btn.className = "nav-btn";
+            btn.innerText = days[index];
+            btn.onclick = () => scrollToId(`others-${index}`, index, 'others');
+            btn.id = `others-btn-${index}`;
+            navDiv.appendChild(btn);
+
+            // 卡片
+            let html = `
+                <div class="others-card" id="others-${index}">
+                    <div class="others-header">
+                        <span class="others-title">${dayInfo.date.split(' ')[0]} 週${days[index]}</span>
+                    </div>
+            `;
+
+            // 五店迴圈
+            const storeOrder = ["東榮店", "大里店", "益民店", "高工店", "樹德店"];
+            
+            storeOrder.forEach(storeName => {
+                let staffs = dayInfo.stores[storeName];
+                html += `<div class="store-section">
+                            <div class="store-title">
+                                <span class="store-icon">🏢</span>${storeName}
+                            </div>`;
+                
+                if(staffs && staffs.length > 0) {
+                    staffs.forEach(p => {
+                        html += `
+                            <div class="staff-row">
+                                <div>
+                                    <span class="staff-name">${p.n}</span>
+                                    ${p.t.includes('(') ? `<span class="staff-loc-tag">${p.t.split('(')[1].replace(')','')}</span>` : ''}
+                                </div>
+                                <span class="staff-time">${p.t.split(' ')[0]}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += `<div class="no-staff">本日無排班</div>`;
+                }
+                html += `</div>`;
+            });
+
+            html += `</div>`;
+            listDiv.innerHTML += html;
+        });
+
+        autoHighlightDay('others');
+    }
+
+    function scrollToId(elementId, index, prefix) {
+        document.querySelectorAll(`#${prefix}NavBar .nav-btn`).forEach(b => b.classList.remove('active'));
+        let btn = document.getElementById(`${prefix}-btn-${index}`);
+        if(btn) btn.classList.add('active');
+        
+        const el = document.getElementById(elementId);
+        if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function autoHighlightDay(prefix) {
+        let today = new Date();
+        let diffTime = today - currentMonday;
+        let diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        let targetIdx = 0; // default Monday
+        if (diffDays >= 0 && diffDays <= 6) {
+            let todayIdx = today.getDay() - 1;
+            if (todayIdx < 0) todayIdx = 6;
+            targetIdx = todayIdx;
+        }
+        
+        setTimeout(() => {
+            let btn = document.getElementById(`${prefix}-btn-${targetIdx}`);
+            if(btn) btn.classList.add('active');
+        }, 50);
+    }
+</script>
+</body>
+</html>
