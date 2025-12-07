@@ -5,147 +5,212 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>門市排班管理</title>
     <style>
-        /* === 全局變數定義 (配色方案) === */
+        /* === 全局變數定義 (現代配色方案) === */
         :root {
-            --bg-main: #f4f7fa;     /* 背景淡藍灰 */
-            --bg-card: #ffffff;     /* 卡片白底 */
-            --text-primary: #1f1f1f; /* 主要深色文字 */
-            --text-secondary: #8c8c8c; /* 次要灰色文字 */
-            --color-blue: #1890ff;    /* 主藍色 */
-            --color-blue-light: #e6f7ff; /* 淺藍背景 */
-            --color-pink: #ff4d4f;    /* 粉紅色 (地點) */
-            --color-purple: #722ed1; /* 紫色 (導覽列) */
-            --color-rest: #d9d9d9;    /* 休假灰色 */
-            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --bg-main: #f0f2f5;      /* 背景：極淺灰藍 */
+            --bg-card: #ffffff;      /* 卡片：純白 */
+            --text-primary: #2c3e50; /* 主要文字：深藍灰 */
+            --text-secondary: #95a5a6; /* 次要文字：淺灰 */
+            
+            /* 品牌色系 */
+            --color-brand: #3498db;  /* 品牌藍 */
+            --color-brand-light: #ebf5fb; 
+            
+            /* 功能色 */
+            --color-success: #2ecc71; /* 綠色 (上班) */
+            --color-warning: #f1c40f; /* 黃色 (支援/注意) */
+            --color-danger: #e74c3c;  /* 紅色 (晚班/地點) */
+            --color-rest: #bdc3c7;    /* 灰色 (休假) */
+            
+            --shadow-card: 0 8px 20px rgba(0, 0, 0, 0.06);
+            --shadow-float: 0 4px 12px rgba(52, 152, 219, 0.2);
+            --radius-md: 16px;
+            --radius-sm: 8px;
         }
 
         /* === 全局設定 === */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-main);
             color: var(--text-primary);
-            padding: 0; margin: 0; padding-bottom: 90px;
+            padding: 0; margin: 0; padding-bottom: 100px;
             -webkit-font-smoothing: antialiased;
         }
-        .container { max-width: 500px; margin: 0 auto; }
+        .container { max-width: 500px; margin: 0 auto; min-height: 100vh; }
         
-        /* === 頂部區域 === */
+        /* === 頂部區域 (Glassmorphism) === */
         .sticky-header {
             position: sticky; top: 0; z-index: 100;
-            padding: 15px 20px 5px 20px;
-            background: transparent;
+            padding: 15px 20px 10px 20px;
+            background: rgba(240, 242, 245, 0.85); /* 半透明背景 */
+            backdrop-filter: blur(12px); /* 毛玻璃效果 */
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.3);
         }
 
         /* 日期控制卡片 */
         .header-controls {
             display: flex; justify-content: space-between; align-items: center;
-            background: var(--bg-card); padding: 10px 15px;
-            border-radius: 16px; margin-bottom: 15px;
-            box-shadow: var(--shadow-soft);
+            background: var(--bg-card); padding: 8px 12px;
+            border-radius: 50px; /* 膠囊狀 */
+            margin-bottom: 15px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(0,0,0,0.02);
         }
         .date-picker-container { flex: 1; text-align: center; position: relative; }
         input[type="date"] { 
             border: none; background: transparent; 
-            font-size: 18px; font-weight: 800; color: var(--text-primary); 
-            text-align: center; width: 140px; cursor: pointer; font-family: inherit;
+            font-size: 16px; font-weight: 700; color: var(--text-primary); 
+            text-align: center; width: 130px; cursor: pointer; font-family: inherit;
+            outline: none;
         }
         .arrow-btn {
-            background: var(--bg-main); border: none; width: 36px; height: 36px; border-radius: 50%;
-            font-size: 16px; color: var(--color-blue); font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+            background: var(--color-brand-light); border: none; width: 36px; height: 36px; border-radius: 50%;
+            font-size: 18px; color: var(--color-brand); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .arrow-btn:active { background: #e6ebf0; }
+        .arrow-btn:active { transform: scale(0.9); background: #d6eaf8; }
 
         /* 星期導覽列 */
-        .nav-bar { display: flex; justify-content: space-between; gap: 8px; padding: 0 5px 10px 5px; }
+        .nav-bar { display: flex; justify-content: space-between; gap: 6px; padding: 5px 2px 10px 2px; overflow-x: auto; scrollbar-width: none; }
+        .nav-bar::-webkit-scrollbar { display: none; }
         .nav-btn {
-            flex: 1; background: transparent; border: none; border-radius: 12px; padding: 10px 0;
-            font-size: 14px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s;
+            flex: 1; min-width: 44px;
+            background: transparent; border: none; border-radius: 14px; padding: 10px 0;
+            font-size: 13px; font-weight: 600; color: var(--text-secondary); 
+            cursor: pointer; transition: all 0.3s ease;
+            position: relative;
         }
         .nav-btn.active { 
-            color: var(--text-primary); background: var(--bg-card);
-            box-shadow: var(--shadow-soft); position: relative;
-        }
-        .nav-btn.active::after {
-            content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-            width: 20px; height: 3px; background: var(--color-blue); border-radius: 2px;
+            color: #fff; background: var(--color-brand);
+            box-shadow: var(--shadow-float);
         }
 
         /* === 內容區 === */
-        #contentArea { padding: 10px 20px; }
-        .empty-week { text-align: center; padding: 50px 20px; color: var(--text-secondary); font-weight: 500; }
+        #contentArea { padding: 10px 20px; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .empty-week { 
+            text-align: center; padding: 60px 20px; color: var(--text-secondary); 
+            font-weight: 500; font-size: 15px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .empty-week::before { content: '☕'; font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.5; }
 
         /* === 我的班表卡片 === */
         .day-card { 
-            background: var(--bg-card); border-radius: 16px; padding: 16px 20px;
-            margin-bottom: 16px; box-shadow: var(--shadow-soft);
-            display: flex; flex-direction: column;
-            border-left: 4px solid transparent; scroll-margin-top: 180px;
+            background: var(--bg-card); border-radius: var(--radius-md); padding: 20px;
+            margin-bottom: 20px; box-shadow: var(--shadow-card);
+            position: relative; overflow: hidden;
+            transition: transform 0.2s;
+            scroll-margin-top: 180px;
+            border: 1px solid rgba(0,0,0,0.03);
         }
-        .day-card.work { border-left-color: var(--color-blue); }
-        .day-card.rest { border-left-color: var(--color-rest); opacity: 0.8; }
+        .day-card:active { transform: scale(0.99); }
         
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .day-title { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+        /* 左側裝飾條 */
+        .day-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+        }
+        .day-card.work::before { background: var(--color-brand); }
+        .day-card.rest::before { background: var(--color-rest); }
+        .day-card.rest { opacity: 0.7; filter: grayscale(0.2); }
         
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .day-title { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.5px; }
+        
+        /* 班次標籤 */
         .shift-badge {
-            font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 24px;
-            display: flex; align-items: center; gap: 4px;
+            font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-        .work .shift-badge { background-color: var(--color-blue-light); color: var(--color-blue); }
-        .rest .shift-badge { background-color: #f0f0f0; color: var(--text-secondary); }
-        .badge-icon { font-size: 14px; }
-
+        .work .shift-badge { background-color: var(--color-brand-light); color: var(--color-brand); }
+        .rest .shift-badge { background-color: #f2f3f4; color: var(--text-secondary); }
+        
+        /* 詳細資訊行 */
         .detail-row {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 15px; margin-top: 10px; color: var(--text-primary);
+            font-size: 15px; margin-top: 12px; padding-top: 12px;
+            border-top: 1px dashed #eee;
         }
-        .loc-container { display: flex; align-items: center; font-weight: 600; }
-        .loc-pin { color: var(--color-pink); margin-right: 6px; font-size: 16px; }
-        .time { font-family: "SF Mono", "Roboto Mono", monospace; color: var(--text-secondary); font-weight: 500; }
+        .detail-row:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+        
+        .loc-container { display: flex; align-items: center; font-weight: 600; color: var(--text-primary); }
+        .loc-pin { 
+            color: var(--color-danger); margin-right: 8px; font-size: 16px; 
+            background: #fdeaea; padding: 4px; border-radius: 50%; width: 24px; height: 24px; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .time { 
+            font-family: "SF Mono", "Menlo", monospace; 
+            color: var(--text-secondary); font-weight: 600; font-size: 14px;
+            background: #f8f9fa; padding: 4px 8px; border-radius: 6px;
+        }
 
         /* === 同事班表樣式 === */
         .others-card {
-            background: var(--bg-card); border-radius: 16px; overflow: hidden; margin-bottom: 20px;
-            box-shadow: var(--shadow-soft); scroll-margin-top: 180px; border: none;
+            background: var(--bg-card); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px;
+            box-shadow: var(--shadow-card); scroll-margin-top: 180px; border: none;
         }
         .others-header {
-            background: #fafafa; padding: 12px 20px; border-bottom: 1px solid #eee;
+            background: linear-gradient(to right, #f8f9fa, #fff); padding: 15px 20px; 
+            border-bottom: 1px solid #eee;
             display: flex; justify-content: space-between; align-items: center;
         }
         .others-title { font-size: 18px; font-weight: 800; color: var(--text-primary); }
-        .others-date { font-size: 14px; color: var(--text-secondary); }
 
-        .store-section { border-bottom: 1px solid #eee; }
+        .store-section { border-bottom: 1px solid #f0f0f0; }
         .store-section:last-child { border-bottom: none; }
         .store-title {
-            padding: 10px 20px; font-size: 14px; font-weight: 700; color: var(--text-secondary);
+            padding: 12px 20px; font-size: 14px; font-weight: 700; color: var(--text-secondary);
             background: #fff; display: flex; align-items: center; letter-spacing: 0.5px;
         }
-        .store-icon { margin-right: 6px; font-size: 16px; }
+        .store-icon { margin-right: 8px; font-size: 16px; opacity: 0.8; }
 
         .staff-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 20px; border-top: 1px solid #f9f9f9;
+            padding: 14px 20px; border-top: 1px solid #fafafa;
+            transition: background 0.2s;
         }
+        .staff-row:hover { background: #fdfdfd; }
         .staff-name { font-weight: 600; font-size: 15px; color: var(--text-primary); }
-        .staff-loc-tag { font-size: 11px; background: #fff1f0; color: var(--color-pink); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal;}
-        .staff-time { font-family: "SF Mono", monospace; font-size: 14px; color: var(--color-blue); font-weight: 500; }
-        .no-staff { padding: 15px 20px; color: var(--text-secondary); font-size: 14px; font-style: italic; border-top: 1px solid #f9f9f9; }
+        
+        /* 支援標籤樣式優化 */
+        .staff-loc-tag { 
+            font-size: 10px; background: #fff0f0; color: var(--color-danger); 
+            padding: 3px 8px; border-radius: 10px; margin-left: 8px; 
+            font-weight: 700; border: 1px solid rgba(231, 76, 60, 0.1);
+            vertical-align: middle;
+        }
+        .staff-time { 
+            font-family: "SF Mono", monospace; font-size: 14px; 
+            color: var(--color-brand); font-weight: 600; 
+            background: var(--color-brand-light); padding: 2px 8px; border-radius: 4px;
+        }
+        .no-staff { padding: 20px; color: var(--text-secondary); font-size: 14px; text-align: center; background: #fafafa; }
 
-        /* === 底部導覽列 === */
+        /* === 底部導覽列 (Floating) === */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: var(--bg-card); box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
-            display: flex; justify-content: space-around; padding: 12px 0 20px 0; z-index: 200;
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex; justify-content: space-around; padding: 12px; z-index: 200;
+            border-radius: 24px; max-width: 460px; margin: 0 auto;
+            border: 1px solid rgba(255,255,255,0.5);
         }
         .tab-btn {
-            border: none; background: none; color: var(--text-secondary); font-size: 11px; font-weight: 600;
-            display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 50%;
-            transition: color 0.2s;
+            border: none; background: none; color: #b0b8bf; font-size: 11px; font-weight: 600;
+            display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 45%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 4px 0; border-radius: 16px;
         }
-        .tab-icon { font-size: 24px; margin-bottom: 4px; }
-        .tab-btn.active { color: var(--color-purple); }
+        .tab-icon { font-size: 22px; margin-bottom: 4px; transition: transform 0.3s; }
+        
+        .tab-btn.active { color: var(--color-brand); background: var(--color-brand-light); }
+        .tab-btn.active .tab-icon { transform: translateY(-2px); }
         
         .hidden { display: none; }
     </style>
@@ -160,7 +225,7 @@
             </button>
             <div class="date-picker-container">
                 <input type="date" id="datePicker" onchange="onDatePick()">
-                <div style="font-size: 11px; color: #aaa; margin-top: 2px;">(點擊選擇日期)</div>
+                <div style="font-size: 10px; color: #95a5a6; margin-top: 2px; font-weight: 500;">點擊選擇日期</div>
             </div>
             <button class="arrow-btn" onclick="changeWeek(1)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
@@ -460,6 +525,11 @@
                             <span class="time">${sub.t}</span>
                         </div>`;
                 });
+            } else {
+                 html += `
+                        <div class="detail-row" style="color:#bdc3c7; justify-content:center; border:none;">
+                            好好休息，充電再出發！
+                        </div>`;
             }
             html += `</div>`;
             listDiv.innerHTML += html;
@@ -517,7 +587,7 @@
                         `;
                     });
                 } else {
-                    html += `<div class="no-staff">本日無排班</div>`;
+                    html += `<div class="no-staff">無排班人員</div>`;
                 }
                 html += `</div>`;
             });
